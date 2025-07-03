@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fast Paisa Mini App</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+      text-align: center;
+    }#app {
+  padding-bottom: 70px; /* for nav */
+}
+
+.section {
+  padding: 20px;
+}
+
+.nav {
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  display: flex;
+  justify-content: space-around;
+  background-color: #fff;
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.1);
+  padding: 10px 0;
+  z-index: 999;
+}
+
+.nav button {
+  border: none;
+  background: none;
+  font-size: 16px;
+  cursor: pointer;
+  color: #333;
+}
+
+h2 {
+  color: #2c3e50;
+}
+
+button {
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: none;
+  background-color: #4CAF50;
+  color: white;
+  margin: 10px 0;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #45a049;
+}
+
+input[type="text"] {
+  padding: 10px;
+  width: 80%;
+  margin: 10px auto;
+  display: block;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+}
+
+canvas {
+  margin-top: 20px;
+}
+
+  </style>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script>
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(el => el.style.display = 'none');
+      document.getElementById(id).style.display = 'block';
+    }function watchAd() {
+  show_9520392('pop').then(() => {
+    alert("Ad watched. ₹1 added to wallet!");
+  });
+}
+
+function spinWheel() {
+  const canvas = document.getElementById("wheel");
+  const ctx = canvas.getContext("2d");
+  const values = [0.10, 0.50, 0.78, 0.65, 1.00];
+  const colors = ["#00ff00", "#66ff66", "#99ff99", "#ccffcc", "#33cc33"];
+  const total = values.length;
+  const arc = (2 * Math.PI) / total;
+  const radius = canvas.width / 2;
+
+  // draw static wheel
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  for (let i = 0; i < total; i++) {
+    ctx.beginPath();
+    ctx.fillStyle = colors[i];
+    ctx.moveTo(radius, radius);
+    ctx.arc(radius, radius, radius, arc * i, arc * (i + 1));
+    ctx.lineTo(radius, radius);
+    ctx.strokeStyle = "black";
+    ctx.stroke();
+    ctx.fill();
+    ctx.closePath();
+    
+    ctx.fillStyle = "#000";
+    ctx.font = "16px Arial";
+    ctx.fillText(`₹${values[i]}`, radius + Math.cos(arc * (i + 0.5)) * 80 - 15, radius + Math.sin(arc * (i + 0.5)) * 80);
+  }
+
+  // spin logic
+  const prizeIndex = Math.floor(Math.random() * total);
+  setTimeout(() => {
+    alert(`Congrats! You won ₹${values[prizeIndex]}`);
+  }, 2000);
+}
+
+function requestWithdraw() {
+  const upi = document.getElementById("upi").value;
+  if (!upi) return alert("Please enter your UPI ID");
+  document.getElementById("withdrawStatus").innerText = `Withdraw request submitted for ₹50 to ${upi} (Pending)`;
+}
+
+document.addEventListener("DOMContentLoaded", function () {
+  const url = window.location.href;
+  const userId = url.split("?")[1]?.split("=")[1] || "xyz123";
+  document.getElementById("refLink").value = `https://t.me/yourbot?start=${userId}`;
+  showSection('offers');
+});
+
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div class="nav">
+      <button onclick="showSection('offers')">📲 Offers</button>
+      <button onclick="showSection('watch')">👀 Watch</button>
+      <button onclick="showSection('spin')">🎯 Spin</button>
+      <button onclick="showSection('refer')">👫 Refer</button>
+      <button onclick="showSection('withdraw')">💸 Withdraw</button>
+    </div><div id="offers" class="section">
+  <h2>🆕 New Offers</h2>
+  <div id="offerList">Coming Soon...</div>
+</div>
+
+<div id="watch" class="section" style="display: none;">
+  <h2>📺 Watch & Earn</h2>
+  <button onclick="watchAd()">Watch Ad & Earn ₹1</button>
+</div>
+
+<div id="spin" class="section" style="display: none;">
+  <h2>🎯 Spin & Win</h2>
+  <canvas id="wheel" width="300" height="300"></canvas><br />
+  <button onclick="spinWheel()">Spin</button>
+</div>
+
+<div id="refer" class="section" style="display: none;">
+  <h2>🔗 Refer & Earn</h2>
+  <p>Your Link:</p>
+  <input type="text" id="refLink" readonly />
+</div>
+
+<div id="withdraw" class="section" style="display: none;">
+  <h2>💵 Withdraw</h2>
+  <div id="withdrawStatus"></div>
+  <input type="text" placeholder="Enter UPI ID" id="upi" />
+  <button onclick="requestWithdraw()">Request ₹50 Withdraw</button>
+  <p>Note: Watch 2 ads & complete 3 offers to enable withdraw</p>
+</div>
+
+  </div>  <script src="https://cdn.jsdelivr.net/gh/monetag/monetag-web-sdk/sdk.min.js"></script></body>
+</html>
