@@ -1,0 +1,95 @@
+<!-- WOW EARNING - PROFESSIONAL MINI APP UI TEMPLATE (INCASH STYLE) --><!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WOW Earning</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-green-50 font-sans"><!-- WALLET HEADER --><div class="bg-green-600 text-white py-4 text-center">
+  <h1 class="text-xl font-bold">WOW EARNING</h1>
+  <p class="text-sm">Wallet Balance: <span id="walletBalance">₹0</span></p>
+</div><!-- DAILY REWARD SECTION --><div class="p-4">
+  <div class="bg-white rounded-lg shadow p-3">
+    <h2 class="text-lg font-semibold text-green-700">🎁 Daily Reward</h2>
+    <button onclick="claimReward()" class="mt-2 w-full bg-green-600 text-white py-2 rounded">Claim Today's Reward</button>
+  </div>
+</div><!-- TASK SECTION --><div class="p-4">
+  <div class="bg-white rounded-lg shadow p-3">
+    <h2 class="text-lg font-semibold text-green-700">🎯 Offers</h2>
+    <div id="offerList"></div>
+  </div>
+</div><!-- REFERRAL SECTION --><div class="p-4">
+  <div class="bg-white rounded-lg shadow p-3">
+    <h2 class="text-lg font-semibold text-green-700">👥 Refer & Earn</h2>
+    <p class="text-sm text-gray-600">Referral Code: <span id="refCode">4R2N0</span></p>
+    <button onclick="copyReferral()" class="mt-2 w-full bg-blue-500 text-white py-2 rounded">Copy Referral Link</button>
+    <p class="mt-2 text-xs text-gray-500">Earn ₹5 when your friend completes ₹20 worth of tasks.</p>
+  </div>
+</div><!-- WITHDRAW SECTION --><div class="p-4">
+  <div class="bg-white rounded-lg shadow p-3">
+    <h2 class="text-lg font-semibold text-green-700">💸 Withdraw</h2>
+    <input type="text" placeholder="Enter UPI ID or Bank Details" class="border w-full p-2 rounded mb-2">
+    <button onclick="requestWithdraw()" class="w-full bg-yellow-500 text-white py-2 rounded">Request Withdraw</button>
+    <p class="text-xs text-gray-600 mt-1">Minimum ₹20 required. Withdrawal will be marked as Pending and updated after review.</p>
+  </div>
+</div><!-- HISTORY SECTION --><div class="p-4">
+  <div class="bg-white rounded-lg shadow p-3">
+    <h2 class="text-lg font-semibold text-green-700">📜 History</h2>
+    <div>
+      <h3 class="text-sm font-medium text-gray-800">Task History</h3>
+      <ul id="taskHistory" class="text-xs text-gray-600"></ul>
+      <h3 class="text-sm font-medium text-gray-800 mt-3">Withdraw History</h3>
+      <ul id="withdrawHistory" class="text-xs text-gray-600"></ul>
+    </div>
+  </div>
+</div><!-- FOOTER --><footer class="text-center text-xs text-gray-400 p-4">
+  © 2025 WOW EARNING | All Rights Reserved
+</footer><!-- SCRIPTS --><script>
+  let wallet = 0;
+  let offers = [
+    { name: "Download & Register on XYZ App", coins: 20 },
+    { name: "Spin & Win Daily", coins: 5 },
+    { name: "Watch Ad Video", coins: 10 }
+  ];
+
+  const updateWallet = (amount) => {
+    wallet += amount;
+    document.getElementById("walletBalance").innerText = `₹${wallet}`;
+  };
+
+  const claimReward = () => {
+    updateWallet(2);
+    alert("You earned ₹2 Daily Reward");
+  };
+
+  const loadOffers = () => {
+    const container = document.getElementById("offerList");
+    offers.forEach((offer, index) => {
+      const div = document.createElement("div");
+      div.className = "border-b py-2 flex justify-between items-center";
+      div.innerHTML = `<span>${offer.name}</span><button onclick="claimTask(${index})" class='bg-green-500 text-white px-2 py-1 rounded text-sm'>+${offer.coins}</button>`;
+      container.appendChild(div);
+    });
+  };
+
+  const claimTask = (index) => {
+    updateWallet(offers[index].coins);
+    document.getElementById("taskHistory").innerHTML += `<li>${offers[index].name} - ₹${offers[index].coins}</li>`;
+  };
+
+  const copyReferral = () => {
+    navigator.clipboard.writeText("https://your-app.netlify.app/?ref=4R2N0");
+    alert("Referral link copied");
+  };
+
+  const requestWithdraw = () => {
+    if (wallet < 20) return alert("Minimum ₹20 required to withdraw.");
+    document.getElementById("withdrawHistory").innerHTML += `<li>Requested ₹${wallet} - Pending</li>`;
+    alert("Withdrawal Request Sent. Status: Pending.");
+    wallet = 0;
+    updateWallet(0);
+  };
+
+  loadOffers();
+</script></body>
+</html>
