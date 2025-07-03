@@ -1,0 +1,198 @@
+<!DOCTYPE html><html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fast Paisa - Telegram Mini App</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+    }
+    header {
+      background: #25D366;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 24px;
+    }
+    .wallet {
+      padding: 10px;
+      background: white;
+      text-align: right;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .section {
+      display: none;
+      padding: 20px;
+      background: white;
+      margin-bottom: 10px;
+    }
+    .active {
+      display: block;
+    }
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: white;
+      display: flex;
+      justify-content: space-around;
+      border-top: 1px solid #ccc;
+      padding: 10px 0;
+    }
+    .nav-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      color: #25D366;
+      font-size: 14px;
+      border: none;
+      background: none;
+      cursor: pointer;
+    }
+    .nav-btn img {
+      width: 30px;
+      height: 30px;
+      margin-bottom: 5px;
+    }
+    .wheel-container {
+      position: relative;
+      width: 300px;
+      height: 300px;
+      margin: 0 auto;
+    }
+    .wheel {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      border: 5px solid black;
+      background: green;
+      position: relative;
+      transition: transform 4s ease-out;
+      overflow: hidden;
+    }
+    .segment {
+      width: 50%;
+      height: 50%;
+      background: rgba(255,255,255,0.2);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: 0% 0%;
+      border-right: 2px solid black;
+      border-bottom: 2px solid black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: bold;
+      font-size: 16px;
+    }
+    .pointer {
+      width: 0;
+      height: 0;
+      border-left: 15px solid transparent;
+      border-right: 15px solid transparent;
+      border-bottom: 20px solid red;
+      position: absolute;
+      top: -20px;
+      left: calc(50% - 15px);
+    }
+    .spin-btn {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: #25D366;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+  </style>
+</head>
+<body>
+  <header>Fast Paisa</header>
+  <div class="wallet">Wallet: ₹<span id="wallet">0.00</span></div>  <div id="offers" class="section active">
+    <h2>🎁 Offers</h2>
+    <p>New offers will be shown here soon.</p>
+  </div>  <div id="task" class="section">
+    <h2>📺 Watch and Earn</h2>
+    <p>Watch videos and earn coins. (Coming Soon)</p>
+    <h2>📢 Join Telegram</h2>
+    <p>Join our channel and get rewards. (Coming Soon)</p>
+  </div>  <div id="spin" class="section">
+    <h2>🎡 Spin and Earn</h2>
+    <div class="wheel-container">
+      <div id="spinner" class="wheel">
+        <div class="segment" style="transform: rotate(0deg);">₹0.10</div>
+        <div class="segment" style="transform: rotate(72deg);">₹0.78</div>
+        <div class="segment" style="transform: rotate(144deg);">₹0.50</div>
+        <div class="segment" style="transform: rotate(216deg);">₹0.65</div>
+        <div class="segment" style="transform: rotate(288deg);">₹1.00</div>
+      </div>
+      <div class="pointer"></div>
+    </div>
+    <button class="spin-btn" onclick="spinWheel()">Spin Now</button>
+  </div>  <div id="refer" class="section">
+    <h2>👥 Refer and Earn</h2>
+    <p>Your referral link:</p>
+    <input type="text" value="https://t.me/YourBot?start=12345" readonly style="width:100%; padding:10px;" />
+  </div>  <div id="withdraw" class="section">
+    <h2>💸 Withdraw</h2>
+    <p>Enter your UPI ID to withdraw</p>
+    <input type="text" placeholder="Enter your UPI" style="width:100%; padding:10px; margin-bottom:10px;">
+    <button style="padding:10px 20px; background:#25D366; color:white; border:none; border-radius:5px;">Request Withdrawal</button>
+  </div>  <div class="bottom-nav">
+    <button class="nav-btn" onclick="showSection('offers')">
+      <img src="https://cdn-icons-png.flaticon.com/128/1029/1029183.png" />
+      Offers
+    </button>
+    <button class="nav-btn" onclick="showSection('task')">
+      <img src="https://cdn-icons-png.flaticon.com/128/2270/2270935.png" />
+      Task
+    </button>
+    <button class="nav-btn" onclick="showSection('spin')">
+      <img src="https://cdn-icons-png.flaticon.com/128/3064/3064197.png" />
+      Spin
+    </button>
+    <button class="nav-btn" onclick="showSection('refer')">
+      <img src="https://cdn-icons-png.flaticon.com/128/6819/6819730.png" />
+      Refer
+    </button>
+    <button class="nav-btn" onclick="showSection('withdraw')">
+      <img src="https://cdn-icons-png.flaticon.com/128/1161/1161605.png" />
+      Withdraw
+    </button>
+  </div>  <script>
+    let wallet = 0;
+
+    function updateWallet(amount) {
+      wallet += amount;
+      document.getElementById('wallet').innerText = wallet.toFixed(2);
+    }
+
+    function spinWheel() {
+      const spinner = document.getElementById("spinner");
+      const deg = Math.floor(Math.random() * 360 + 720);
+      spinner.style.transform = `rotate(${deg}deg)`;
+      setTimeout(() => {
+        const rewards = [0.10, 0.78, 0.50, 0.65, 1.00];
+        const index = Math.floor(((deg % 360) / 72)) % 5;
+        const reward = rewards[5 - index % 5];
+        updateWallet(reward);
+        alert(`🎉 You won ₹${reward.toFixed(2)}`);
+      }, 4000);
+    }
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+    }
+  </script></body>
+            </html>
