@@ -1,0 +1,61 @@
+<!DOCTYPE html><html lang="en"><head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fast Paisa App</title>
+  <link rel="stylesheet" href="style.css">
+  <script type="module" src="app.js" defer></script>
+</head><body>
+  <!-- Wallet Section -->
+  <section id="wallet">
+    <img src="assets/wallet.png" alt="Wallet Icon">
+    <h2>Wallet (<span id="wallet-balance">₹0.00</span>)</h2>
+  </section>  <!-- Daily Login Rewards -->  <section id="daily-reward">
+    <h3>🎁 Daily Login Rewards</h3>
+    <div id="rewards-grid"></div>
+    <div id="monetag-daily"></div>
+  </section>  <!-- Join Telegram Bonus -->  <section id="join-telegram">
+    <img src="assets/telegram.png" alt="Telegram">
+    <button onclick="claimTelegramReward()">Join Telegram & Get ₹0.50</button>
+  </section>  <!-- Extra Tips -->  <section id="tips">
+    <ul>
+      <li>Complete tasks daily and earn more.</li>
+      <li>Refer your friends and earn 70% of their income.</li>
+      <li>Watch ads completely to unlock rewards.</li>
+    </ul>
+  </section>  <!-- Spin & Win -->  <section id="spin-section">
+    <h3>🌿 Spin & Win</h3>
+    <canvas id="spin-wheel" width="300" height="300"></canvas>
+    <button onclick="startSpin()">Spin Now</button>
+    <div id="monetag-spin"></div>
+  </section>  <!-- Watch & Earn -->  <section id="watch">
+    <h3>👁️ Watch & Earn</h3>
+    <img src="assets/watch.jpg" alt="Watch Image">
+    <button onclick="watchAd()">Watch Now & Earn</button>
+    <div id="monetag-watch"></div>
+  </section>  <!-- Refer & Earn -->  <section id="refer">
+    <h3>📢 Refer & Earn</h3>
+    <p>Your referral code: <span id="ref-code">loading...</span></p>
+    <img src="assets/refer.png" alt="Refer Image">
+    <p>Earn 70% of your friend's income!</p>
+  </section>  <!-- Withdraw Section -->  <section id="withdraw">
+    <h3>💸 Withdraw</h3>
+    <input type="text" id="upi-id" placeholder="Enter your UPI ID">
+    <button onclick="withdrawRequest()">Withdraw Now</button>
+    <div id="monetag-withdraw"></div><div id="history-tabs">
+  <button onclick="showHistory('coin')">Coin History</button>
+  <button onclick="showHistory('withdraw')">Withdraw History</button>
+</div>
+<div id="history-content"></div>
+
+  </section>  <!-- Navigation Bar -->  <nav id="bottom-nav">
+    <button onclick="navigate('wallet')">💰</button>
+    <button onclick="navigate('watch')">👁️</button>
+    <button onclick="navigate('spin-section')">🌿</button>
+    <button onclick="navigate('refer')">📢</button>
+    <button onclick="navigate('withdraw')">💸</button>
+  </nav>  <!-- Monetag Ad Scripts (Replace with your live code) -->  <script>
+    // Monetag example ad trigger (replace with real function)
+    function showMonetagAd(location) {
+      alert("[Monetag Ad would show here at: " + location + "]");
+    }
+  </script></body></html>
