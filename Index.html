@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Fast Paisa - Telegram Mini App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- Modern Design Upgrade --- */
+        :root {
+            --primary-green: #25D366;
+            --dark-green: #128C7E;
+            --light-green: #e8f5e9;
+            --text-dark: #333;
+            --text-light: #777;
+            --bg-color: #f7f9fc;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+            --shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-color);
+            color: var(--text-dark);
+            /* Prevent content from hiding behind the nav bar */
+            padding-bottom: 80px;
+        }
+
+        /* --- Header --- */
+        header {
+            background: var(--card-bg);
+            color: var(--text-dark);
+            padding: 15px 20px;
+            font-size: 22px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .wallet-balance {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--light-green);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--dark-green);
+        }
+
+        .wallet-balance img {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* --- Section Styling --- */
+        .section {
+            display: none;
+            padding: 20px;
+        }
+        .section.active {
+            display: block;
+        }
+        .section h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+        .content-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            margin-bottom: 15px;
+        }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            border-top: 1px solid var(--border-color);
+            padding: 10px 0;
+        }
+
+        .nav-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: var(--text-light);
+            font-size: 12px;
+            font-weight: 500;
+            border: none;
+            background: none;
+            cursor: pointer;
+            flex: 1;
+            transition: color 0.2s ease;
+        }
+        .nav-btn.active-nav, .nav-btn:active {
+            color: var(--primary-green);
+        }
+        .nav-btn img {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* --- Spin Wheel Upgrade --- */
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 20px auto;
+        }
+        #spinner {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 6px solid var(--dark-green);
+            position: relative;
+            transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            overflow: hidden;
+            /* Using conic-gradient for a perfect segmented look */
+            background: conic-gradient(
+                #25D366 0% 20%, #DCEDC8 20% 40%,
+                #25D366 40% 60%, #DCEDC8 60% 80%,
+                #25D366 80% 100%
+            );
+        }
+        .segment-value {
+            position: absolute;
+            width: 50%;
+            height: 50%;
+            top: 50%;
+            left: 50%;
+            transform-origin: 0% 0%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding-left: 20px; /* Push text outwards */
+            font-weight: 600;
+            font-size: 18px;
+            color: var(--dark-green);
+        }
+        .pointer {
+            width: 0;
+            height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-top: 30px solid #d32f2f; /* Sharp red pointer */
+            position: absolute;
+            top: -5px;
+            left: calc(50% - 20px);
+            z-index: 10;
+        }
+
+        /* --- Generic UI Elements --- */
+        .app-button {
+             margin-top: 20px;
+             padding: 15px 20px;
+             font-size: 16px;
+             font-weight: 600;
+             background: var(--primary-green);
+             color: white;
+             border: none;
+             border-radius: 12px;
+             cursor: pointer;
+             display: block;
+             width: 100%;
+             box-sizing: border-box;
+         }
+        .app-button:hover {
+            background: var(--dark-green);
+        }
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-sizing: border-box;
+            margin-bottom: 10px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+        }
+        .history-box {
+            margin-top: 20px;
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+        .history-box ul {
+            padding-left: 20px;
+            margin: 0;
+        }
+        .history-box li {
+            padding: 5px 0;
+        }
+        a {
+            color: var(--primary-green);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <span>Fast Paisa</span>
+        <div class="wallet-balance">
+            <img src="https://cdn-icons-png.flaticon.com/128/891/891462.png" alt="Wallet">
+            ₹<span id="wallet">0.00</span>
+        </div>
+    </header>
+
+    <div id="offers" class="section active">
+        <h2>🎁 Offers</h2>
+        <div class="content-card">
+             <p>Install AppX - Get ₹2.50</p>
+             <button class="app-button" style="margin-top:10px; width:auto; padding: 10px 20px; font-size:14px;">Claim Now</button>
+        </div>
+    </div>
+
+    <div id="task" class="section">
+        <h2>📝 Complete Tasks</h2>
+        <div class="content-card">
+            <h4>📢 Join Telegram</h4>
+            <img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" width="40" alt="Telegram" />
+            <p>
+                <a href="https://t.me/somuearning" target="_blank">[Join our Telegram]</a> and get ₹0.50 reward.
+            </p>
+        </div>
+        <div class="content-card">
+            <h4>📺 Watch and Earn</h4>
+            <img src="https://cdn-icons-png.flaticon.com/512/2784/2784420.png" width="80" alt="Watch" />
+            <p>[Watch videos and earn coins]</p>
+        </div>
+    </div>
+
+    <div id="spin" class="section">
+        <h2>🎡 Spin and Earn</h2>
+        <div class="content-card" style="text-align: center;">
+            <div class="wheel-container">
+                <div id="spinner" class="wheel">
+                    </div>
+                <div class="pointer"></div>
+            </div>
+            <button class="app-button" onclick="spinWheel()">Spin Now</button>
+        </div>
+    </div>
+
+    <div id="refer" class="section">
+        <h2>👥 Refer and Earn</h2>
+        <div class="content-card">
+            <p>Your referral link:</p>
+            <input type="text" id="referralLink" value="https://t.me/YourBot?start=12345" readonly />
+            <button class="app-button" onclick="navigator.clipboard.writeText(document.getElementById('referralLink').value).then(() => alert('Link Copied!'))">📋 Copy Link</button>
+            <p style="margin-top:20px;">Invite Friends:</p>
+            <div>
+                <a href="https://wa.me/?text=Join+FastPaisa+https://t.me/YourBot?start=12345" target="_blank">
+                    <img src="https://cdn-icons-png.flaticon.com/128/733/733585.png" width="40" alt="WhatsApp"/>
+                </a>
+                <a href="https://t.me/share/url?url=https://t.me/YourBot?start=12345" target="_blank" style="margin-left:15px;">
+                    <img src="https://cdn-icons-png.flaticon.com/128/2111/2111646.png" width="40" alt="Telegram"/>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div id="withdraw" class="section">
+        <h2>💸 Withdraw</h2>
+        <div class="content-card">
+            <p>Enter your UPI ID:</p>
+            <input type="text" placeholder="yourname@upi">
+            <p>Enter amount:</p>
+            <input type="number" placeholder="e.g., 5">
+            <p><b>Eligibility:</b> You must complete 3 tasks to withdraw.</p>
+            <button class="app-button" onclick="requestWithdrawal()">Withdraw</button>
+        </div>
+        <div id="history" class="history-box">
+            <b>Transaction History:</b>
+            <ul id="historyList">
+                <li>No transactions yet.</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn" onclick="showSection('offers')"><img src="https://cdn-icons-png.flaticon.com/128/1029/1029183.png" />Offers</button>
+        <button class="nav-btn" onclick="showSection('task')"><img src="https://cdn-icons-png.flaticon.com/128/2270/2270935.png" />Tasks</button>
+        <button class="nav-btn" onclick="showSection('spin')"><img src="https://cdn-icons-png.flaticon.com/128/3064/3064197.png" />Spin</button>
+        <button class="nav-btn" onclick="showSection('refer')"><img src="https://cdn-icons-png.flaticon.com/128/6819/6819730.png" />Refer</button>
+        <button class="nav-btn" onclick="showSection('withdraw')"><img src="https://cdn-icons-png.flaticon.com/128/1161/1161605.png" />Withdraw</button>
+    </div>
+
+<script>
+    // --- STATE MANAGEMENT ---
+    let wallet = 0;
+    let history = [];
+    const spinner = document.getElementById("spinner");
+    // The rewards array for the spin wheel.
+    const rewards = [0.10, 0.78, 0.50, 0.65, 1.00];
+    let isSpinning = false;
+
+
+    // --- CORE FUNCTIONS ---
+    function updateWallet(amount) {
+        wallet += amount;
+        document.getElementById('wallet').innerText = wallet.toFixed(2);
+    }
+
+    function spinWheel() {
+        if (isSpinning) return;
+        isSpinning = true;
+
+        // Calculate a random degree to spin. Added extra rotations for a better effect.
+        const deg = Math.floor(Math.random() * 360) + 1440; // 4 extra full spins
+        // **FIXED**: Using backticks for template literal
+        spinner.style.transform = `rotate(${deg}deg)`;
+
+        // After the spin animation (5 seconds), calculate the reward
+        setTimeout(() => {
+            const actualDeg = deg % 360; // The final position
+            const segmentAngle = 360 / rewards.length;
+            const prizeIndex = Math.floor(actualDeg / segmentAngle);
+
+            // **IMPROVED LOGIC**: Directly map the index to the reward
+            const reward = rewards[prizeIndex];
+
+            updateWallet(reward);
+            // **FIXED**: Using backticks for template literal
+            history.unshift(`+₹${reward.toFixed(2)} from Spin`);
+            renderHistory();
+            // **FIXED**: Using backticks for template literal
+            alert(`🎉 You won ₹${reward.toFixed(2)}`);
+            isSpinning = false;
+        }, 5000); // This duration must match the CSS transition duration
+    }
+
+    function requestWithdrawal() {
+        const amount = wallet;
+        if (amount <= 0) {
+            alert("Insufficient balance");
+            return;
+        }
+        // **FIXED**: Using backticks for template literal
+        history.unshift(`Withdrawal of ₹${amount.toFixed(2)} - Pending`);
+        renderHistory();
+
+        setTimeout(() => {
+            // **FIXED**: Using backticks for template literal
+            history[0] = `Withdrawal of ₹${amount.toFixed(2)} - ✅ Successful`;
+            renderHistory();
+            wallet = 0;
+            document.getElementById('wallet').innerText = wallet.toFixed(2);
+        }, 5000); // Simulate network delay
+    }
+
+    function renderHistory() {
+        const list = document.getElementById("historyList");
+        // If history is empty, show a message, otherwise show the list
+        if(history.length === 0){
+            list.innerHTML = '<li>No transactions yet.</li>';
+            return;
+        }
+        // **FIXED**: Using backticks for template literal
+        list.innerHTML = history.map(item => `<li>${item}</li>`).join("");
+    }
+
+    function showSection(id) {
+        // Hide all sections
+        document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
+        // Show the target section
+        document.getElementById(id).classList.add('active');
+
+        // Update active state on nav buttons
+        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav'));
+        // Find the button that corresponds to the section and add the active class
+        document.querySelector(`.nav-btn[onclick="showSection('${id}')"]`).classList.add('active-nav');
+    }
+    
+    function initializeApp() {
+        // Dynamically create wheel segments from rewards array
+        spinner.innerHTML = ''; // Clear existing
+        const segmentAngle = 360 / rewards.length;
+        rewards.forEach((reward, index) => {
+            const rotation = segmentAngle * index;
+            spinner.innerHTML += `<div class="segment-value" style="transform: rotate(${rotation}deg);">₹${reward.toFixed(2)}</div>`;
+        });
+        
+        // Set the first section and nav button to be active on load
+        showSection('offers');
+    }
+
+    // --- APP INITIALIZATION ---
+    // Run the app setup once the document is loaded
+    document.addEventListener('DOMContentLoaded', initializeApp);
+
+</script>
+</body>
+          </html>
+                                                                
