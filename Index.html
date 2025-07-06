@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>InCash - Rewards</title>
+    <!-- Telegram Mini App Script -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-green: #1db954;
+            --dark-green: #107C41;
+            --light-green: #f0fff6;
+            --primary-blue: #007bff;
+            --text-dark: #212529;
+            --text-light: #6c757d;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --border-color: #e9ecef;
+            --header-height: 60px;
+            --nav-height: 70px;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-dark);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- Main Layout --- */
+        .app-header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 0 20px; height: var(--header-height); background-color: var(--card-bg);
+            border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .app-header .logo { font-weight: 700; font-size: 22px; color: var(--dark-green); }
+        .wallet-balance {
+            display: flex; align-items: center; gap: 8px; background-color: var(--light-green);
+            padding: 8px 15px; border-radius: 20px; font-weight: 600;
+            color: var(--dark-green); font-size: 14px;
+        }
+        .coin-icon { width: 22px; height: 22px; }
+        main { flex-grow: 1; overflow-y: auto; padding: 20px; }
+        .app-section { display: none; }
+        .app-section.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        h2.section-title { font-size: 20px; font-weight: 600; margin: 0 0 20px 0; }
+        
+        /* --- Page Specific Styles --- */
+
+        /* Offers */
+        .offer-card {
+            background-color: var(--card-bg); border-radius: 12px; padding: 15px;
+            display: flex; align-items: center; justify-content: space-between;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .offer-card .info { display: flex; align-items: center; gap: 15px; }
+        .offer-card .info img { width: 45px; height: 45px; border-radius: 8px; }
+        .offer-card .info .name { font-weight: 500; font-size: 15px; }
+        .offer-card .reward { display: flex; align-items: center; gap: 5px; color: var(--primary-green); font-weight: 600; }
+
+        /* NEW: Tasks Section */
+        .task-card {
+            background-color: var(--card-bg); border-radius: 12px; padding: 20px;
+            display: flex; align-items: center; gap: 20px;
+            margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+        .task-card .icon-container {
+            flex-shrink: 0; width: 50px; height: 50px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .task-card .icon-container img, .task-card .icon-container svg { width: 30px; height: 30px; }
+        .task-card .details { flex-grow: 1; }
+        .task-card .details h3 { font-size: 16px; margin: 0 0 4px 0; }
+        .task-card .details p { font-size: 13px; color: var(--text-light); margin: 0; }
+        .task-card .action-button {
+            background-color: var(--primary-green); color: white; border-radius: 8px;
+            padding: 8px 16px; font-weight: 500; text-decoration: none; border: none; cursor: pointer;
+        }
+        a.task-card { text-decoration: none; color: inherit; }
+        .join-telegram-card .action-button { background-color: var(--primary-blue); }
+
+        /* Spin */
+        /* ... (spin styles are unchanged) ... */
+        .spin-container { text-align: center; }
+        .wheel-container { position: relative; width: 280px; height: 280px; margin: 20px auto; }
+        #wheel {
+            width: 100%; height: 100%; border-radius: 50%;
+            background: conic-gradient(#107C41 0% 10%, #1db954 10% 20%, #107C41 20% 30%, #1db954 30% 40%, #107C41 40% 50%, #1db954 50% 60%, #107C41 60% 70%, #1db954 70% 80%, #107C41 80% 90%, #1db954 90% 100%);
+            position: relative; transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            display: flex; align-items: center; justify-content: center;
+            border: 5px solid white; box-shadow: 0 0 20px rgba(0,0,0,0.15);
+        }
+        .wheel-center { width: 60px; height: 60px; background: white; border-radius: 50%; border: 5px solid var(--dark-green); z-index: 2; }
+        .wheel-value {
+            position: absolute; color: white; font-weight: 600; font-size: 14px;
+            transform: var(--transform); display: flex; flex-direction: column; align-items: center; gap: 5px;
+        }
+        .pointer {
+            position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 0; height: 0;
+            border-left: 20px solid transparent; border-right: 20px solid transparent;
+            border-bottom: 35px solid #d9534f; z-index: 10;
+        }
+
+        /* Refer */
+        /* ... (refer card styles are unchanged) ... */
+        .refer-card {
+            background-color: var(--light-green); padding: 25px; border-radius: 15px;
+            text-align: center; border: 2px dashed var(--primary-green);
+        }
+        .refer-card p { margin: 5px 0 10px; color: var(--text-light); }
+        .refer-code { font-size: 28px; font-weight: 700; letter-spacing: 2px; margin-bottom: 15px; color: var(--dark-green); }
+        .social-share-container {
+            display: flex; justify-content: center; gap: 20px; margin-top: 20px;
+        }
+        .social-share-container a {
+            display: flex; align-items: center; justify-content: center;
+            width: 48px; height: 48px; border-radius: 50%; background-color: var(--card-bg);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .social-share-container img { width: 28px; height: 28px; }
+
+        /* ... (other styles remain unchanged) ... */
+        .rewards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+        .reward-day { background-color: var(--card-bg); padding: 20px 15px; border-radius: 12px; text-align: center; border: 1px solid var(--border-color); }
+        .reward-day.claimed { background-color: var(--light-green); border-color: var(--primary-green); }
+        .reward-day .day { font-size: 14px; color: var(--text-light); margin-bottom: 10px; }
+        .reward-day .amount { font-size: 16px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 5px; }
+        .redeem-balance { text-align: center; padding: 25px; background-color: var(--card-bg); border-radius: 15px; margin-bottom: 25px; }
+        .redeem-balance .balance-label { color: var(--text-light); }
+        .redeem-balance .balance-amount { font-size: 36px; font-weight: 700; display: flex; align-items: center; justify-content: center; gap: 10px; margin: 10px 0; }
+        .redeem-store { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .redeem-option { background-color: var(--card-bg); padding: 15px; border-radius: 12px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.05); cursor: pointer; }
+        .redeem-option img { width: 45px; height: 45px; object-fit: contain; margin-bottom: 10px; }
+        .redeem-option .name { font-weight: 500; font-size: 14px; }
+        .redeem-option .cost { font-size: 12px; color: var(--text-light); display: flex; align-items: center; justify-content: center; gap: 4px; margin-top: 5px; }
+
+        /* --- Bottom Navigation --- */
+        .bottom-nav {
+            display: flex; justify-content: space-around; background-color: var(--card-bg);
+            padding: 10px 0; border-top: 1px solid var(--border-color);
+            flex-shrink: 0; height: var(--nav-height); box-sizing: border-box;
+        }
+        .nav-btn { background: none; border: none; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: var(--text-light); flex: 1; transition: color 0.2s; }
+        .nav-btn.active { color: var(--primary-green); font-weight: 500; }
+        .nav-btn svg { width: 24px; height: 24px; fill: currentColor; }
+        .app-button { background-color: var(--primary-green); color: white; border: none; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: 600; cursor: pointer; width: 100%; margin-top: 20px; transition: background-color 0.2s; }
+        .app-button:disabled { background-color: #ced4da; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <div class="logo">InCash</div>
+        <div class="wallet-balance">
+            <svg class="coin-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11,7V9H9V11H11V13H9V15H11V17H13V15H15V13H13V11H15V9H13V7H11Z" /></svg>
+            <span id="wallet-amount">0.00</span>
+        </div>
+    </header>
+
+    <main>
+        <section id="offers" class="app-section">
+            <h2 class="section-title">Complete Offers & Earn</h2>
+            <div class="offer-list"></div>
+        </section>
+
+        <section id="tasks" class="app-section">
+            <h2 class="section-title">Daily Tasks</h2>
+            <div id="task-list"></div>
+        </section>
+
+        <section id="spin" class="app-section">
+            <!-- Spin content is unchanged -->
+            <h2 class="section-title">Spin and Win</h2>
+            <div class="spin-container">
+                <div class="wheel-container"><div class="pointer"></div><div id="wheel"><div class="wheel-center"></div></div></div>
+                <button id="spin-btn" class="app-button">Let's Spin</button>
+            </div>
+        </section>
+
+        <section id="refer" class="app-section">
+            <h2 class="section-title">Refer Friends</h2>
+            <div class="refer-card">
+                <p>Your Referral Code</p>
+                <div class="refer-code" id="referral-code">4R2N0</div>
+                <button class="app-button" style="width:auto; padding: 10px 30px; font-size:16px;" onclick="copyReferralCode()">Copy</button>
+            </div>
+            <div style="text-align:center; margin-top: 25px;">
+                <p style="color:var(--text-light); margin-bottom:15px;">Share with friends via:</p>
+                <div class="social-share-container">
+                    <a id="share-whatsapp" href="#" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp"></a>
+                    <a id="share-telegram" href="#" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram"></a>
+                    <a id="share-facebook" href="#" target="_blank"><img src="https://upload.wikimedia.org/wikipedia/commons/b/b8/2021_Facebook_icon.svg" alt="Facebook"></a>
+                    <a id="share-generic" href="#"><img src="https://www.svgrepo.com/show/498319/share-2.svg" alt="Share"></a>
+                </div>
+            </div>
+        </section>
+
+        <section id="rewards" class="app-section">
+            <h2 class="section-title">Daily Rewards</h2>
+            <div id="rewards-grid" class="rewards-grid"></div>
+            <button id="claim-reward-btn" class="app-button">Claim Reward</button>
+        </section>
+
+        <section id="redeem" class="app-section">
+            <!-- Redeem content is unchanged -->
+            <div class="redeem-balance">
+                <div class="balance-label">Wallet Balance</div>
+                <div class="balance-amount">
+                    <svg class="coin-icon" style="width:36px; height:36px;" viewBox="0 0 24 24"><path fill="currentColor" d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M11,7V9H9V11H11V13H9V15H11V17H13V15H15V13H13V11H15V9H13V7H11Z" /></svg>
+                    <span id="redeem-wallet-amount">0.00</span>
+                </div>
+                <button class="app-button" style="background-color: var(--dark-green);">Redeem Now</button>
+            </div>
+            <h3 style="font-size: 18px; font-weight:600; margin-bottom: 15px;">Redeem Store</h3>
+            <div id="redeem-store" class="redeem-store"></div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav">
+        <button class="nav-btn" data-section="offers">
+            <svg viewBox="0 0 24 24"><path d="M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.9,2 2,2.9 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.59,21.41C11.95,21.78 12.45,22 13,22C13.55,22 14.05,21.78 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.45 21.78,11.95 21.41,11.58M13,20L4,11V4H11L20,13L13,20M6.5,5C7.33,5 8,5.67 8,6.5C8,7.33 7.33,8 6.5,8C5.67,8 5,7.33 5,6.5C5,5.67 5.67,5 6.5,5Z"/></svg>
+            Offers
+        </button>
+        <button class="nav-btn" data-section="tasks">
+            <svg viewBox="0 0 24 24"><path d="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.97C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.97L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.97Z" /></svg>
+            Tasks
+        </button>
+        <button class="nav-btn" data-section="spin">
+            <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,10.84 21.79,9.72 21.4,8.68L22,8L20,4L16,6L16.5,6.5C15.42,5.55 13.79,5 12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12C19,11.5 18.93,11 18.82,10.53L20.25,9.63C20.72,10.33 21,11.14 21,12A9,9 0 0,1 12,21A9,9 0 0,1 3,12A9,9 0 0,1 12,3C13.54,3 15,3.43 16.23,4.17L17.62,2.78C16,1.66 14.07,1 12,1Z"/></svg>
+            Spin
+        </button>
+        <button class="nav-btn" data-section="refer">
+             <svg viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M1,18V20H5V18C5,15.33 3.67,14 1,14M1,12A3,3 0 0,1 4,9A3,3 0 0,1 1,6A3,3 0 0,1 -2,9A3,3 0 0,1 1,12M15,12A3,3 0 0,1 18,9A3,3 0 0,1 15,6A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" transform="translate(0, -1)"/></svg>
+            Refer
+        </button>
+        <button class="nav-btn" data-section="redeem">
+            <svg viewBox="0 0 24 24"><path d="M20,6H4V4H20V6M20,18H4V12H20V18M21,10H3V20H21V10M17,15H7V13H17V15Z"/></svg>
+            Wallet
+        </button>
+    </nav>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+    const WebApp = window.Telegram.WebApp;
+    WebApp.ready();
+    WebApp.expand();
+    
+    // --- APP STATE ---
+    const appState = {
+        coins: 7.08,
+        referralCode: "4R2N0",
+        botUsername: "YourBotName", // IMPORTANT: Change this to your bot's username
+        tasks: {
+            telegramJoined: false,
+            lastAdWatched: null
+        },
+        dailyRewards: [ /* ...unchanged... */ ],
+        offers: [ /* ...unchanged... */ ],
+        redeemOptions: [ /* ...unchanged... */ ],
+        spinWheel: { isSpinning: false, values: [0, 20, 12, 8, 4, 30, 1, 2, 6, 15] }
+    };
+
+    // --- DOM ELEMENTS --- (Simplified for brevity)
+    const elements = {
+        walletAmount: document.getElementById('wallet-amount'),
+        // ... all other elements from previous version
+    };
+
+    // --- RENDER FUNCTIONS ---
+    // (wallet, offers, dailyRewards, redeemStore, spinWheel, referralCode renderers are unchanged)
+    
+    // NEW: Renders all tasks in the Task section
+    function renderTasks() {
+        const container = document.getElementById('task-list');
+        container.innerHTML = ''; // Clear previous tasks
+
+        // --- Watch and Earn Task ---
+        const watchTask = document.createElement('div');
+        watchTask.className = 'task-card';
+        watchTask.innerHTML = `
+            <div class="icon-container" style="background-color: #ffebee;">
+                <svg style="color: #f44336;" viewBox="0 0 24 24"><path fill="currentColor" d="M10,16.5V7.5L16,12M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z" /></svg>
+            </div>
+            <div class="details">
+                <h3>Watch and Earn</h3>
+                <p>Watch a short ad to earn a reward.</p>
+            </div>
+            <button class="action-button" id="watch-ad-btn">Watch</button>
+        `;
+        container.appendChild(watchTask);
+        document.getElementById('watch-ad-btn').addEventListener('click', handleWatchAd);
+
+        // --- Join Telegram Task ---
+        const joinTask = document.createElement('a'); // Changed to an <a> tag
+        joinTask.className = 'task-card join-telegram-card';
+        joinTask.href = "https://t.me/somuearning";
+        joinTask.target = "_blank"; // Open in new tab
+        joinTask.id = "join-telegram-task";
+        joinTask.innerHTML = `
+            <div class="icon-container" style="background-color: #e3f2fd;">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram">
+            </div>
+            <div class="details">
+                <h3>Join Telegram</h3>
+                <p>Get 100 coins for joining our channel!</p>
+            </div>
+            <div class="action-button">Join</div>
+        `;
+        container.appendChild(joinTask);
+        joinTask.addEventListener('click', handleJoinTelegram);
+        
+        if (appState.tasks.telegramJoined) {
+            joinTask.style.opacity = '0.6';
+            joinTask.style.pointerEvents = 'none';
+            joinTask.querySelector('.action-button').textContent = 'Joined';
+        }
+    }
+
+
+    // --- ACTIONS ---
+
+    // NEW: Handles the "Watch Ad" button click
+    function handleWatchAd() {
+        WebApp.showPopup({
+            title: 'Watch Ad',
+            message: 'You are about to watch an ad. You will receive a reward after it finishes.',
+            buttons: [
+                { id: 'watch', type: 'default', text: 'Watch Now' },
+                { type: 'cancel' },
+            ]
+        }, (buttonId) => {
+            if (buttonId === 'watch') {
+                // *** IMPORTANT: THIS IS WHERE YOU PUT YOUR MONETAG LINK ***
+                // window.open('YOUR_MONETAG_AD_LINK_HERE', '_blank');
+                WebApp.showAlert('Opening ad...'); // Placeholder alert
+
+                // Simulate getting a reward after a delay
+                setTimeout(() => {
+                    const reward = 5; // Example reward amount
+                    appState.coins += reward;
+                    render.wallet();
+     
