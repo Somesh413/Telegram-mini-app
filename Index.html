@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Fast Paisa - Telegram Mini App</title>
+    
+    <!-- Supabase Client Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* Your entire CSS code remains unchanged... */
+        :root {
+            --primary-green: #25D366; --dark-green: #128C7E; --light-green: #e8f5e9;
+            --text-dark: #333; --text-light: #777; --bg-color: #f7f9fc;
+            --card-bg: #ffffff; --border-color: #e9ecef; --shadow: 0 4px 15px rgba(0, 0, 0, 0.07);
+        }
+        body { margin: 0; font-family: 'Poppins', sans-serif; background: var(--bg-color); color: var(--text-dark); padding-bottom: 80px; }
+        header { background: var(--card-bg); color: var(--text-dark); padding: 15px 20px; font-size: 22px; font-weight: 700; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); }
+        .wallet-balance { display: flex; align-items: center; gap: 8px; background: var(--light-green); padding: 8px 15px; border-radius: 20px; font-size: 15px; font-weight: 600; color: var(--dark-green); }
+        .wallet-balance img { width: 20px; height: 20px; }
+        .section { display: none; padding: 20px; }
+        .section.active { display: block; }
+        .section h2 { font-size: 20px; font-weight: 600; margin-top: 0; margin-bottom: 20px; }
+        .content-card { background: var(--card-bg); padding: 20px; border-radius: 12px; box-shadow: var(--shadow); margin-bottom: 15px; }
+        .offer-card-detailed { display: flex; align-items: center; gap: 15px; }
+        .offer-card-detailed .offer-icon img { width: 60px; height: 60px; border-radius: 12px; flex-shrink: 0; }
+        .offer-card-detailed .offer-details { flex-grow: 1; }
+        .offer-card-detailed .offer-details h4 { margin: 0 0 8px 0; font-size: 16px; font-weight: 600; }
+        .offer-card-detailed .offer-details ul { list-style: none; padding: 0; margin: 0; font-size: 13px; color: var(--text-light); }
+        .offer-card-detailed .offer-details li { margin-bottom: 4px; }
+        .offer-card-detailed .offer-details li::before { content: '✓'; color: var(--primary-green); font-weight: bold; margin-right: 8px; }
+        .offer-card-detailed .offer-reward-link { background-color: var(--primary-green); color: white !important; padding: 12px 18px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 14px; text-align: center; transition: background-color 0.2s; flex-shrink: 0; }
+        .offer-card-detailed .offer-reward-link:hover { background-color: var(--dark-green); }
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; background: var(--card-bg); display: flex; justify-content: space-around; border-top: 1px solid var(--border-color); box-shadow: 0 -2px 10px rgba(0,0,0,0.05); padding: 5px 0; height: 65px; }
+        .nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: var(--text-light); font-size: 12px; font-weight: 500; border: none; background: none; cursor: pointer; flex: 1; position: relative; transition: color 0.2s ease; }
+        .nav-btn svg { width: 24px; height: 24px; fill: currentColor; margin-bottom: 2px; }
+        .nav-btn.active-nav { color: var(--primary-green); }
+        .nav-btn.active-nav::before { content: ''; position: absolute; top: 2px; left: 50%; transform: translateX(-50%); width: 30px; height: 3px; background-color: var(--primary-green); border-radius: 2px; }
+        .wheel-container { position: relative; width: 300px; height: 300px; margin: 20px auto; }
+        #spinner { width: 100%; height: 100%; border-radius: 50%; border: 6px solid var(--dark-green); position: relative; transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1); overflow: hidden; background: conic-gradient( #25D366 0% 20%, #DCEDC8 20% 40%, #25D366 40% 60%, #DCEDC8 60% 80%, #25D366 80% 100% ); }
+        .segment-value { position: absolute; width: 50%; height: 50%; top: 50%; left: 50%; transform-origin: 0% 0%; display: flex; align-items: center; justify-content: center; padding-left: 20px; font-weight: 600; font-size: 18px; color: var(--dark-green); }
+        .pointer { width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #d32f2f; position: absolute; top: -5px; left: calc(50% - 20px); z-index: 10; }
+        .app-button { margin-top: 20px; padding: 15px 20px; font-size: 16px; font-weight: 600; background: var(--primary-green); color: white; border: none; border-radius: 12px; cursor: pointer; display: block; width: 100%; box-sizing: border-box; }
+        .app-button:hover { background: var(--dark-green); }
+        input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px; }
+        .history-box { margin-top: 20px; background: var(--bg-color); padding: 15px; border-radius: 8px; font-size: 14px; border: 1px solid var(--border-color); }
+        .history-box ul { padding-left: 20px; margin: 0; }
+        .history-box li { padding: 5px 0; }
+        a { color: var(--primary-green); text-decoration: none; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+    <!-- Your entire HTML UI remains unchanged... -->
+    <header>
+        <span>Fast Paisa</span>
+        <div class="wallet-balance">
+            <img src="https://cdn-icons-png.flaticon.com/128/891/891462.png" alt="Wallet">
+            ₹<span id="wallet">0.00</span>
+        </div>
+    </header>
+    <div id="offers" class="section active">
+        <h2>🎁 High Paying Offers</h2>
+        <div class="content-card offer-card-detailed">
+            <div class="offer-icon"><img src="https://i.imgur.com/vHq7JdD.jpeg" alt="Winzo App Icon"></div>
+            <div class="offer-details">
+                <h4>Winzo Games: Play & Win</h4>
+                <ul><li>Download (new user)</li><li>Must play free ludo game</li><li>Use for 3 days</li></ul>
+            </div>
+            <a href="https://winzo.onelink.me/gu8K/069gcge2" target="_blank" class="offer-reward-link">Get ₹25</a>
+        </div>
+    </div>
+    <div id="task" class="section">
+        <h2>📝 Complete Tasks</h2>
+        <div class="content-card"><h4>📢 Join Telegram</h4><img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" width="40" alt="Telegram" /><p><a href="https://t.me/somuearning" target="_blank">[Join our Telegram]</a> and get ₹0.50 reward.</p></div>
+        <div class="content-card"><h4>📺 Watch and Earn</h4><img src="https://cdn-icons-png.flaticon.com/512/2784/2784420.png" width="80" alt="Watch" /><p>[Watch videos and earn coins]</p></div>
+    </div>
+    <div id="spin" class="section">
+        <h2>🎡 Spin and Earn</h2>
+        <div class="content-card" style="text-align: center;"><div class="wheel-container"><div id="spinner" class="wheel"></div><div class="pointer"></div></div><button class="app-button" onclick="spinWheel()">Spin Now</button></div>
+    </div>
+    <div id="refer" class="section">
+        <h2>👥 Refer and Earn</h2>
+        <div class="content-card"><p>Your referral link:</p><input type="text" id="referralLink" value="https://t.me/YourBot?start=12345" readonly /><button class="app-button" onclick="navigator.clipboard.writeText(document.getElementById('referralLink').value).then(() => alert('Link Copied!'))">📋 Copy Link</button><p style="margin-top:20px;">Invite Friends:</p><div><a href="https://wa.me/?text=Join+FastPaisa+https://t.me/YourBot?start=12345" target="_blank"><img src="https://cdn-icons-png.flaticon.com/128/733/733585.png" width="40" alt="WhatsApp"/></a><a href="https://t.me/share/url?url=https://t.me/YourBot?start=12345" target="_blank" style="margin-left:15px;"><img src="https://cdn-icons-png.flaticon.com/128/2111/2111646.png" width="40" alt="Telegram"/></a></div></div>
+    </div>
+    <div id="withdraw" class="section">
+        <h2>💸 Withdraw</h2>
+        <div class="content-card"><p>Enter your UPI ID:</p><input type="text" placeholder="yourname@upi"><p>Enter amount:</p><input type="number" placeholder="e.g., 5"><p><b>Eligibility:</b> You must complete 3 tasks to withdraw.</p><button class="app-button" onclick="requestWithdrawal()">Withdraw</button></div>
+        <div id="history" class="history-box"><b>Transaction History:</b><ul id="historyList"><li>No transactions yet.</li></ul></div>
+    </div>
+    <div class="bottom-nav">
+        <button class="nav-btn" onclick="showSection('offers')"><svg viewBox="0 0 24 24"><path d="M21.41,11.58L12.41,2.58C12.05,2.22 11.55,2 11,2H4C2.9,2 2,2.9 2,4V11C2,11.55 2.22,12.05 2.59,12.41L11.59,21.41C11.95,21.78 12.45,22 13,22C13.55,22 14.05,21.78 14.41,21.41L21.41,14.41C21.78,14.05 22,13.55 22,13C22,12.45 21.78,11.95 21.41,11.58M13,20L4,11V4H11L20,13L13,20M6.5,5C7.33,5 8,5.67 8,6.5C8,7.33 7.33,8 6.5,8C5.67,8 5,7.33 5,6.5C5,5.67 5.67,5 6.5,5Z"/></svg>Offers</button>
+        <button class="nav-btn" onclick="showSection('task')"><svg viewBox="0 0 24 24"><path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,12V14H16V12H8M8,16V18H13V16H8Z"/></svg>Tasks</button>
+        <button class="nav-btn" onclick="showSection('spin')"><svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12C22,10.84 21.79,9.72 21.4,8.68L22,8L20,4L16,6L16.5,6.5C15.42,5.55 13.79,5 12,5A7,7 0 0,0 5,12A7,7 0 0,0 12,19A7,7 0 0,0 19,12C19,11.5 18.93,11 18.82,10.53L20.25,9.63C20.72,10.33 21,11.14 21,12A9,9 0 0,1 12,21A9,9 0 0,1 3,12A9,9 0 0,1 12,3C13.54,3 15,3.43 16.23,4.17L17.62,2.78C16,1.66 14.07,1 12,1Z"/></svg>Spin</button>
+        <button class="nav-btn" onclick="showSection('refer')"><svg viewBox="0 0 24 24"><path d="M15,14C12.33,14 7,15.33 7,18V20H23V18C23,15.33 17.67,14 15,14M1,18V20H5V18C5,15.33 3.67,14 1,14M1,12A3,3 0 0,1 4,9A3,3 0 0,1 1,6A3,3 0 0,1 -2,9A3,3 0 0,1 1,12M15,12A3,3 0 0,1 18,9A3,3 0 0,1 15,6A3,3 0 0,1 12,9A3,3 0 0,1 15,12Z" transform="translate(0, -1)"/></svg>Refer</button>
+        <button class="nav-btn" onclick="showSection('withdraw')"><svg viewBox="0 0 24 24"><path d="M3,18H21V16H3V18M3,13H21V11H3V13M3,8H21V6H3V8M14.5,20.5L12,18L9.5,20.5L8.8,19.8L11.3,17.3V14H12.7V17.3L15.2,19.8L14.5,20.5Z"/></svg>Withdraw</button>
+    </div>
+
+<script>
+    // --- SUPABASE SETUP ---
+    const SUPABASE_URL = 'https://msrprmhdifktmrbfegom.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcnBybWhkaWZrdG1yYmZlZ29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MDUwNTcsImV4cCI6MjA2NzM4MTA1N30.krJcMCeEmpdx7770j4jhAKwcfv7K9w8gpJZYK_MPBZE';
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    let currentUser = null; 
+
+    // --- YOUR EXISTING CODE (STATE, UI FUNCTIONS) ---
+    let wallet = 0;
+    let history = [];
+    const spinner = document.getElementById("spinner");
+    const rewards = [0.10, 0.78, 0.50, 0.65, 1.00];
+    let isSpinning = false;
+    
+    // This is your UI update code. It's safe.
+    function updateWallet(amount) {
+        wallet += amount;
+        document.getElementById('wallet').innerText = wallet.toFixed(2);
+        // Only update the database if a user is successfully loaded
+        if (currentUser && currentUser.telegram_id) {
+            updateUserCoins(currentUser.telegram_id, amount);
+        }
+    }
+    // All your other UI functions (spinWheel, requestWithdrawal, etc.) are also safe...
+    function spinWheel() { /* ...your existing code... */ }
+    function requestWithdrawal() { /* ...your existing code... */ }
+    function renderHistory() { /* ...your existing code... */ }
+    function showSection(id) { /* ...your existing code... */ }
+    // --- END OF YOUR EXISTING CODE ---
+
+
+    // --- SUPABASE HELPER FUNCTIONS (FOR DATABASE INTERACTION) ---
+    async function getUser(telegram_id) {
+        const { data, error } = await db.from('users').select('*').eq('telegram_id', telegram_id).single();
+        if (error && error.code !== 'PGRST116') {
+             // PGRST116 means "no rows returned", which is OK. We only log other errors.
+            console.error('Error fetching user:', error);
+        }
+        return data;
+    }
+    async function createUser(telegram_id) {
+        const { data, error } = await db.from('users').insert({ telegram_id: telegram_id, coins: 0 }).select().single();
+        if (error) {
+            console.error('Error creating user:', error);
+        }
+        return data;
+    }
+    async function updateUserCoins(telegram_id, amount) {
+        // You MUST create this RPC function in your Supabase SQL Editor for this to work.
+        const { error } = await db.rpc('increment_coins', { user_id: telegram_id, amount_to_add: amount });
+        if (error) {
+            console.error('Error updating coins:', error);
+        }
+    }
+    
+    // --- MAIN APP INITIALIZATION LOGIC ---
+    async function initializeApp() {
+        // First, set up the static parts of the UI that don't need user data
+        spinner.innerHTML = '';
+        const segmentAngle = 360 / rewards.length;
+        rewards.forEach((reward, index) => {
+            const rotation = segmentAngle * index;
+            spinner.innerHTML += `<div class="segment-value" style="transform: rotate(${rotation}deg);">₹${reward.toFixed(2)}</div>`;
+        });
+        showSection('offers');
+
+        // Now, connect to the database and load dynamic data
+        try {
+            const WebApp = window.Telegram.WebApp;
+            
+            // Check if the app is running inside Telegram
+            if (!WebApp || !WebApp.initDataUnsafe || !WebApp.initDataUnsafe.user) {
+                // If not, show a message and stop.
+                document.body.innerHTML = '<div style="text-align: center; padding: 50px; font-family: sans-serif;"><h1>Error</h1><p>This app can only be opened from within Telegram.</p></div>';
+                console.error("Not running inside Telegram or user data is missing.");
+                return;
+            }
+
+            // Get the user ID securely from Telegram
+            const telegram_id = WebApp.initDataUnsafe.user.id;
+            
+            let user = await getUser(telegram_id);
+            if (!user) {
+                console.log("User not found, creating a new one...");
+                user = await createUser(telegram_id);
+            }
+            
+            if (!user) {
+                // This error now means that RLS policies are likely blocking the creation/fetching.
+                throw new Error("User could not be created or fetched. Please check Supabase RLS policies for the 'users' table. Both SELECT and INSERT should be enabled for public access.");
+            }
+
+            currentUser = user;
+            
+            // Update the UI with data from the database
+            wallet = currentUser.coins;
+            document.getElementById('wallet').innerText = wallet.toFixed(2);
+            console.log("User successfully loaded:", currentUser);
+
+        } catch (error) {
+            console.error("CRITICAL ERROR during initialization:", error);
+            alert(error.message); // Show the specific error message
+        }
+    }
+
+    // Run the app!
+    document.addEventListener('DOMContentLoaded', initializeApp);
+</script>
+</body>
+  </html>
