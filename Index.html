@@ -36,6 +36,7 @@
         #spinner { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: hidden; border: 8px solid #fff; box-shadow: 0 0 20px rgba(0,0,0,0.2); transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1); }
         .segment { position: absolute; width: 50%; height: 50%; top: 50%; left: 50%; transform-origin: 0% 0%; }
         .segment .text { position: absolute; left: -100%; width: 200%; height: 200%; text-align: center; transform: rotate(36deg) translateY(20px); font-weight: 600; font-size: 16px; }
+        .pointer { width: 0; height: 0; border-left: 20px solid transparent; border-right: 20px solid transparent; border-top: 30px solid #d32f2f; position: absolute; top: -10px; left: calc(50% - 20px); z-index: 10; }
         .app-button { margin-top: 20px; padding: 15px 20px; font-size: 16px; font-weight: 600; background: var(--primary-green); color: white; border: none; border-radius: 12px; cursor: pointer; display: block; width: 100%; box-sizing: border-box; }
         input[type="text"], input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; margin-bottom: 10px; font-family: 'Poppins', sans-serif; font-size: 14px; }
         a { color: var(--primary-green); text-decoration: none; font-weight: 500; }
@@ -92,36 +93,31 @@
     }
     
     async function requestWithdrawal() { /* ... Puraana code theek hai ... */ }
-
+    
     // === NAYA FUNCTION: Simple Tasks ko Claim karne ke liye ===
-    async function claimSimpleTask(taskId, reward, buttonElement) {
-        buttonElement.disabled = true;
-        buttonElement.innerText = 'Claiming...';
-        
-        // Pehle database mein mark karo ki task complete ho gaya
-        const { error: insertError } = await db.from('completed_tasks').insert({ user_id: currentUser.telegram_id, task_id: taskId });
-        if(insertError) {
-             window.Telegram.WebApp.showAlert('Task already claimed or error saving.');
-             buttonElement.innerText = 'Claimed';
-             return;
-        }
-
-        // Ab user ko reward do
-        const { error: rpcError } = await db.rpc('increment_coins', { user_id: currentUser.telegram_id, amount_to_add: reward });
-        if (rpcError) {
-            window.Telegram.WebApp.showAlert('Could not add reward. Please contact support.');
+    async function claimSimpleTask(taskId, reward) {
+        const { data: existingClaim } = await db.from('completed_tasks').select('id').eq('user_id', currentUser.telegram_id).eq('task_id', taskId).maybeSingle();
+        if(existingClaim) {
+            window.Telegram.WebApp.showAlert('Task already claimed.');
             return;
         }
 
-        // UI update karo
+        const { error: rpcError } = await db.rpc('increment_coins', { user_id: currentUser.telegram_id, amount_to_add: reward });
+        if (rpcError) { window.Telegram.WebApp.showAlert('Could not add reward. Please contact support.'); return; }
+        
+        const { error: insertError } = await db.from('completed_tasks').insert({ user_id: currentUser.telegram_id, task_id: taskId });
+        if(insertError) { window.Telegram.WebApp.showAlert('Error saving task completion.'); return; }
+
         wallet += reward;
         document.getElementById('wallet').innerText = wallet.toFixed(2);
         window.Telegram.WebApp.showAlert(`🎉 You received ₹${reward} for completing the task!`);
-        buttonElement.closest('.content-card').style.display = 'none'; // Task ko hide kar do
+        
+        // Task ko list se hata do
+        const taskCard = document.querySelector(`.task-card[data-task-id="${taskId}"]`);
+        if (taskCard) taskCard.style.display = 'none';
     }
 
-
-    async function fetchAndRender(tableName, containerId, renderFunction, completedIds) {
+    async function fetchAndRender(tableName, containerId, renderFunction, completedIds = new Set()) {
         const container = document.getElementById(containerId);
         container.innerHTML = '<p>Loading...</p>';
         const { data, error } = await db.from(tableName).select('*').eq('is_active', true);
@@ -134,27 +130,18 @@
         availableItems.forEach(item => container.appendChild(renderFunction(item)));
     }
 
-    function createOfferCard(offer) {
-        const card = document.createElement('div');
-        card.className = 'content-card offer-card-detailed';
-        // Ab hum user ki telegram ID bhejenge, offer ki ID nahi.
-        const trackingLink = offer.link.replace('{REPLACE_THIS}', currentUser.telegram_id);
-        card.innerHTML = `
-            <div class="offer-icon"><img src="${offer.icon_url}" alt="icon"></div>
-            <div class="offer-details"><h4>${offer.title}</h4><p>${offer.description || ''}</p></div>
-            <button class="offer-reward-button" data-title="${offer.title}" data-eligibility="${offer.eligibility || ''}" data-link="${trackingLink}">Get ₹${offer.reward}</button>`;
-        return card;
-    }
+    function createOfferCard(offer) { /* ... Puraana code theek hai ... */ }
 
-    // === TASK CARD KA NAYA VERSION ===
+    // === TASK CARD KA NAYA, BEHTAR VERSION ===
     function createTaskCard(task) {
         const card = document.createElement('div');
-        card.className = 'content-card offer-card-detailed';
+        card.className = 'content-card offer-card-detailed task-card';
+        card.dataset.taskId = task.id; // ID ko card par set karo
         card.innerHTML = `
             <div class="offer-icon"><img src="https://cdn-icons-png.flaticon.com/512/2111/2111646.png" alt="icon"></div>
             <div class="offer-details">
                 <h4>${task.title}</h4>
-                <a href="${task.link}" target="_blank" style="font-size: 12px; color: #128C7E;">Click here to join</a>
+                <a href="${task.link}" target="_blank" class="task-link" style="font-size: 12px; color: #128C7E;">Click here to join</a>
             </div>
             <button class="task-reward-button offer-reward-button" style="background-color: var(--dark-green);" data-task-id="${task.id}" data-reward="${task.reward}">Get ₹${task.reward}</button>`;
         return card;
@@ -162,13 +149,15 @@
 
     function updateShareLinks(referralCode) { /* ... Puraana code theek hai ... */ }
 
+    // === INITIALIZEAPP KA NAYA, BEHTAR VERSION ===
     async function initializeApp() {
         try {
             const WebApp = window.Telegram.WebApp;
             WebApp.ready(); WebApp.expand(); 
             
+            // Step 1: UI ko pehle hi ready kar do
             spinner.innerHTML = '';
-            const segmentAngle = 72;
+            const segmentAngle = 72; // 360 / 5
             rewards.forEach((reward, i) => {
                 const segment = document.createElement('div');
                 segment.className = 'segment';
@@ -181,26 +170,40 @@
             });
             showSection('offers');
 
+            // Step 2: User ka data get karo
             if (!WebApp.initDataUnsafe?.user?.id) throw new Error("Could not get user data from Telegram.");
             const telegram_id = WebApp.initDataUnsafe.user.id;
             const startParam = WebApp.initDataUnsafe.start_param;
 
             let { data: user } = await db.from('users').select('*').eq('telegram_id', telegram_id).single();
-            if (!user) { /* ... Naya user banane ka code ... */ }
+
+            // Step 3: Agar user naya hai, toh usko banao aur intezaar karo
+            if (!user) {
+                const referralCode = 'FP' + telegram_id.toString().slice(-6);
+                const newUserDetails = { telegram_id: telegram_id, name: WebApp.initDataUnsafe.user.first_name, referral_code: referralCode };
+                if (startParam) { newUserDetails.referred_by = startParam; }
+                const { data: newUser, error: createError } = await db.from('users').insert(newUserDetails).select().single();
+                if(createError) throw createError;
+                user = newUser; // Ab user variable mein naya data hai
+            }
+            
+            // Ab 100% sure hai ki user null nahi hai
             currentUser = user;
             
+            // Step 4: UI ko user ke data se update karo
             wallet = currentUser.coins || 0;
             document.getElementById('wallet').innerText = wallet.toFixed(2);
             document.getElementById('referralLink').value = `https://t.me/FastPaisabot?start=${currentUser.referral_code || ''}`;
             updateShareLinks(currentUser.referral_code || '');
 
-            // === COMPLETED TASKS/OFFERS CHECK KARNE KA NAYA LOGIC ===
+            // Step 5: Completed tasks/offers ka data laao
             const { data: completedOffers } = await db.from('completed_offers').select('offer_id').eq('user_id', currentUser.telegram_id);
             const { data: completedTasks } = await db.from('completed_tasks').select('task_id').eq('user_id', currentUser.telegram_id);
 
             const completedOfferIds = new Set(completedOffers ? completedOffers.map(c => c.offer_id) : []);
             const completedTaskIds = new Set(completedTasks ? completedTasks.map(c => c.task_id) : []);
 
+            // Step 6: Available offers/tasks dikhao
             await Promise.all([
                 fetchAndRender('offers', 'offers-list-container', createOfferCard, completedOfferIds),
                 fetchAndRender('tasks', 'tasks-list-container', createTaskCard, completedTaskIds)
@@ -213,39 +216,32 @@
     }
 
     // --- EVENT LISTENERS ---
-    document.getElementById('offers-list-container').addEventListener('click', async function(event) {
+    document.getElementById('offers-list-container').addEventListener('click', function(event) {
         const button = event.target.closest('.offer-reward-button');
         if (button) {
             const link = button.dataset.link;
             const eligibility = button.dataset.eligibility;
             const title = button.dataset.title;
-            // Affiliate offers ka reward webhook se aayega, isliye yahan kuch nahi karna
+            // Affiliate offers ka reward webhook se aayega
             window.Telegram.WebApp.showConfirm(`Eligibility for ${title}:\n\n${eligibility.replace(/\\n/g, '\n')}`, (ok) => {
                 if (ok) window.Telegram.WebApp.openLink(link);
             }, 'Continue', 'Cancel');
         }
     });
 
-    // === NAYA EVENT LISTENER TASKS KE LIYE ===
-    document.getElementById('tasks-list-container').addEventListener('click', async function(event) {
+    document.getElementById('tasks-list-container').addEventListener('click', function(event) {
         const button = event.target.closest('.task-reward-button');
         if(button) {
             const taskId = parseInt(button.dataset.taskId);
             const reward = parseFloat(button.dataset.reward);
-            window.Telegram.WebApp.showConfirm("Have you completed this task?", (ok) => {
-                if(ok) {
-                    claimSimpleTask(taskId, reward, button);
-                }
-            });
+            // Click karte hi link kholne ki zaroorat nahi, kyunki user pehle hi join kar chuka hoga
+            // Hum seedha claim karenge
+            claimSimpleTask(taskId, reward, button);
         }
     });
 
     window.addEventListener('load', initializeApp);
-
-    // Baki functions (agar chhoot gaye hon)
-    function updateShareLinks(referralCode) { const referralLink = `https://t.me/FastPaisabot?start=${referralCode}`; const shareText = encodeURIComponent(`Check out this cool app and earn rewards! Join using my link: ${referralLink}`); document.getElementById('share-whatsapp').href = `https://wa.me/?text=${shareText}`; document.getElementById('share-telegram').href = `https://t.me/share/url?url=${encodeURIComponent(referralLink)}&text=${shareText}`; document.getElementById('share-facebook').href = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(referralLink)}`; document.getElementById('share-instagram').href = `https://www.instagram.com/`; }
-    async function requestWithdrawal() { const upiId = document.getElementById('upi-id-input').value.trim(); const amount = parseFloat(document.getElementById('amount-input').value); if (!upiId || !amount || amount <= 0) { window.Telegram.WebApp.showAlert('Please enter a valid UPI ID and amount.'); return; } const { data, error } = await db.rpc('request_withdrawal_rpc', { p_user_id: currentUser.telegram_id, p_amount: amount, p_upi_id: upiId }); if (error) { window.Telegram.WebApp.showAlert(`Error: ${error.message}`); } else { window.Telegram.WebApp.showAlert(data); if (data.includes('successfully')) { wallet -= amount; document.getElementById('wallet').innerText = wallet.toFixed(2); } } }
-
-</script>
-</body>
-  </html>
+    
+    // Baaki ke functions (agar chhoot gaye hon)
+    function createOfferCard(offer) { const card = document.createElement('div'); card.className = 'content-card offer-card-detailed'; const trackingLink = offer.link.replace('{REPLACE_THIS}', currentUser.telegram_id); card.innerHTML = ` <div class="offer-icon"><img src="${offer.icon_url}" alt="icon"></div> <div class="offer-details"><h4>${offer.title}</h4><p>${offer.description || ''}</p></div> <button class="offer-reward-button" data-offer-id="${offer.id}" data-title="${offer.title}" data-eligibility="${offer.eligibility || ''}" data-link="${trackingLink}">Get ₹${offer.reward}</button>`; return card; }
+    function updateShareLinks(referralCode) { const referralLink = `https://t.me/FastPaisabot?start=${referralCode}`; const shareText = encodeURIComponent(`Check out this cool app and earn rewards! Join using my link: ${referralLink}`); document.getElementById('share-whatsapp').href = `https://wa.me/?text=${shareText}`
