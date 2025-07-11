@@ -213,10 +213,42 @@
         }
     }
 
-    async function initializeApp() {
-        WebApp.ready(); WebApp.expand(); 
+    // यह कोड आपकी Index (2).html फ़ाइल में जाएगा
+
+async function spinWheel() {
+    isSpinning = true;
+    const spinButton = document.getElementById('spin-button');
+    spinButton.innerText = 'Spinning...';
+    
+    const prizeIndex = Math.floor(Math.random() * rewards.length);
+    const reward = rewards[prizeIndex];
+    const segmentAngle = 360 / rewards.length;
+    const totalRotation = (360 * 5) + (prizeIndex * segmentAngle) + (segmentAngle / 2);
+    currentRotation += totalRotation;
+    spinner.style.transform = `rotate(${currentRotation}deg)`;
+    
+    currentUser.spin_count++;
+    // Use RPC to update database
+    await db.rpc('update_user_activity', {
+        p_user_id: currentUser.telegram_id,
+        p_spin_count: currentUser.spin_count,
+        p_last_spin_date: null,
+        p_ad_watch_count: null,
+        p_last_ad_watch_date: null
+    });
+    
+    setTimeout(async () => {
         try {
-            spinner.innerHTML = `<svg class="wheel-svg" viewBox="0 0 100 100">${rewards.map((reward, i) => { const angle = 360 / rewards.length, startAngle = -90 + (i * angle); const [x1, y1] = [50 + 50 * Math.cos(Math.PI/180 * startAngle), 50 + 50 * Math.sin(Math.PI/180 * startAngle)]; const [x2, y2] = [50 + 50 * Math.cos(Math.PI/180 * (startAngle+angle)), 50 + 50 * Math.sin(Math.PI/180 * (startAngle+angle))]; const textAngle = startAngle + angle / 2, [textX, textY] = [50 + 35 * Math.cos(Math.PI/180 * textAngle), 50 + 35 * Math.sin(Math.PI/180 * textAngle)]; const color = i % 2 === 0 ? '#25D366' : '#DCEDC8', textColor = i % 2 === 0 ? '#FFFFFF' : '#333333'; return `<path d="M 50 50 L ${x1} ${y1} A 50 50 0 0 1 ${x2} ${y2} Z" fill="${color}"></path><text x="${textX}" y="${textY}" dy=".3em" class="wheel-svg-text" fill="${textColor}">₹${reward.toFixed(2)}</text>`; }).join('')}</svg>`;
+            await giveReward(reward, 'spin'); 
+        } catch (e) {
+            console.error("Spin reward error:", e);
+        } finally {
+            // यह ब्लॉक हमेशा चलेगा, चाहे कोई एरर आए या नहीं
+            isSpinning = false;
+            updateSpinUI(); 
+        }
+    }, 5100); // 5.1 सेकंड के बाद
+}
             
             if (!WebApp.initDataUnsafe?.user?.id) throw new Error("Could not verify user.");
             const telegram_id = WebApp.initDataUnsafe.user.id;
