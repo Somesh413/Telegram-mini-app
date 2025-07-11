@@ -71,10 +71,11 @@
         <button class="nav-btn" onclick="showSection('withdraw')"><svg viewBox="0 0 24 24"><path d="M3,18H21V16H3V18M3,13H21V11H3V13M3,8H21V6H3V8M14.5,20.5L12,18L9.5,20.5L8.8,19.8L11.3,17.3V14H12.7V17.3L15.2,19.8L14.5,20.5Z"/></svg>Withdraw</button>
     </div>
 
-<script>
+          <script>
+    // --- 1. SETUP ---
     const SUPABASE_URL = 'https://msrprmhdifktmrbfegom.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1zcnBybWhkaWZrdG1yYmZlZ29tIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTE4MDUwNTcsImV4cCI6MjA2NzM4MTA1N30.krJcMCeEmpdx7770j4jhAKwcfv7K9w8gpJZYK_MPBZE';
-    const db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     const WebApp = window.Telegram.WebApp;
 
     let currentUser = null; 
@@ -85,6 +86,8 @@
     let currentRotation = 0;
     const MAX_SPINS_PER_DAY = 10;
     const MAX_ADS_PER_DAY = 10;
+
+    // --- 2. CORE FUNCTIONS (All functions are now complete) ---
 
     function showSection(id) {
         document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active'));
@@ -97,9 +100,8 @@
     async function handleSpinClick() {
         if (isSpinning || !currentUser) return;
         
-        const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
+        const today = new Date().toISOString().slice(0, 10);
 
-        // Agar din badal gaya hai, to count reset karo
         if (currentUser.last_spin_date !== today) {
             currentUser.spin_count = 0;
             currentUser.last_spin_date = today;
@@ -111,13 +113,24 @@
             return;
         }
 
+        const spinButton = document.getElementById('spin-button');
+        spinButton.disabled = true; 
+        spinButton.innerText = 'Loading Ad...';
+
+        try { 
+            if (typeof show_9520392 === 'function') await show_9520392('pop');
+        } catch (e) { 
+            console.error("Ad Error:", e);
+        }
+        
+        // Ad ke baad spin hoga
         await spinWheel();
     }
     
     async function spinWheel() {
         isSpinning = true;
         const spinButton = document.getElementById('spin-button');
-        spinButton.disabled = true; spinButton.innerText = 'Spinning...';
+        spinButton.innerText = 'Spinning...';
         
         const prizeIndex = Math.floor(Math.random() * rewards.length);
         const reward = rewards[prizeIndex];
@@ -133,6 +146,10 @@
             await giveReward(reward, 'spin');
             updateSpinUI();
             isSpinning = false;
+            if ((MAX_SPINS_PER_DAY - currentUser.spin_count) > 0) {
+                 spinButton.disabled = false;
+                 spinButton.innerText = "Spin Now";
+            }
         }, 5100);
     }
     
@@ -160,9 +177,9 @@
         card.className = 'content-card offer-card-detailed task-card';
         card.dataset.taskId = task.id;
         if(task.task_type === 'ad') {
-            card.innerHTML = `<div class="offer-icon"><img src="https://cdn-icons-png.flaticon.com/512/2965/2965338.png" alt="ad"></div><div class="offer-details"><h4>${task.title}</h4><p class="limit-info" style="margin-top:5px; font-size:12px;">Ads Remaining: <span id="ad-watch-count-ui">10</span>/10</p></div><button class="task-reward-button ad-task-button offer-reward-button" style="background-color: #ff9800;" data-reward="${task.reward}">Watch Ad</button>`;
+            card.innerHTML = `<div class="offer-icon"><img src="https://cdn-icons-png.flaticon.com/512/2965/2965338.png" alt="ad"></div><div class="offer-details"><h4>${task.title}</h4><div class="limit-info" style="margin:5px 0; padding: 5px; font-size:12px;">Ads Remaining: <span id="ad-watch-count-ui">10</span>/10</div></div><button class="task-reward-button ad-task-button offer-reward-button" style="background-color: #ff9800;" data-reward="${task.reward}">Watch Ad</button>`;
         } else {
-            card.innerHTML = `<div class="offer-icon"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="tg"></div><div class="offer-details"><h4>${task.title}</h4><a href="${task.link}" target="_blank" style="font-size: 12px; color: #128C7E;">Click here to join</a></div><button class="task-reward-button link-task-button offer-reward-button" data-reward="${task.reward}" data-task-id="${task.id}">Claim ₹${task.reward}</button>`;
+            card.innerHTML = `<div class="offer-icon"><img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="tg"></div><div class="offer-details"><h4>${task.title}</h4><button class="join-channel-button" data-link="${task.link}" style="font-size: 12px; color: #128C7E; background:none; border:none; padding:0; text-decoration:underline; cursor:pointer;">Click here to join</button></div><button class="task-reward-button link-task-button offer-reward-button" data-reward="${task.reward}" data-task-id="${task.id}">Claim ₹${task.reward}</button>`;
         }
         return card;
     }
@@ -173,7 +190,7 @@
         const spinButton = document.getElementById('spin-button');
         if (spinsLeft <= 0) {
             spinButton.disabled = true;
-            spinButton.innerText = "Limit Over";
+            spinButton.innerText = "Today's Limit Over";
         } else {
             spinButton.disabled = false;
             spinButton.innerText = "Spin Now";
@@ -188,8 +205,46 @@
             if (adsLeft <= 0) {
                 button.disabled = true;
                 button.innerText = "Limit Over";
+            } else {
+                button.disabled = false;
+                button.innerText = "Watch Ad";
             }
         });
+    }
+
+    async function fetchAndRenderContent() {
+        if (!currentUser) return;
+        
+        const [
+            { data: completedOffers }, 
+            { data: completedTasks },
+            { data: offersData, error: offersError },
+            { data: tasksData, error: tasksError }
+        ] = await Promise.all([
+            db.from('completed_offers').select('offer_id').eq('user_id', currentUser.telegram_id),
+            db.from('completed_tasks').select('task_id').eq('user_id', currentUser.telegram_id),
+            db.from('offers').select('*').eq('is_active', true),
+            db.from('tasks').select('*').eq('is_active', true)
+        ]);
+
+        const completedOfferIds = new Set(completedOffers ? completedOffers.map(c => c.offer_id) : []);
+        const completedTaskIds = new Set(completedTasks ? completedTasks.map(c => c.task_id) : []);
+
+        const offersContainer = document.getElementById('offers-list-container');
+        if (offersError) { offersContainer.innerHTML = `<p>Could not load offers.</p>`; } 
+        else {
+            const availableOffers = offersData.filter(item => !completedOfferIds.has(item.id));
+            if (availableOffers.length === 0) { offersContainer.innerHTML = `<p>No new offers available.</p>`; } 
+            else { offersContainer.innerHTML = ''; availableOffers.forEach(item => offersContainer.appendChild(createOfferCard(item))); }
+        }
+        
+        const tasksContainer = document.getElementById('tasks-list-container');
+        if (tasksError) { tasksContainer.innerHTML = `<p>Could not load tasks.</p>`; } 
+        else {
+            const availableTasks = tasksData.filter(item => !completedTaskIds.has(item.id));
+            if (availableTasks.length === 0) { tasksContainer.innerHTML = `<p>No new tasks available.</p>`; } 
+            else { tasksContainer.innerHTML = ''; availableTasks.forEach(item => tasksContainer.appendChild(createTaskCard(item))); }
+        }
     }
 
     async function initializeApp() {
@@ -227,21 +282,13 @@
             wallet = currentUser.coins || 0;
             document.getElementById('wallet').innerText = wallet.toFixed(2);
             
-            const [{ data: completedOffers }, { data: completedTasks }, { count }] = await Promise.all([
-                db.from('completed_offers').select('offer_id').eq('user_id', currentUser.telegram_id),
-                db.from('completed_tasks').select('task_id').eq('user_id', currentUser.telegram_id),
-                db.from('users').select('*', { count: 'exact', head: true }).eq('referred_by', currentUser.referral_code)
-            ]);
+            await fetchAndRenderContent();
             
-            const completedOfferIds = new Set(completedOffers ? completedOffers.map(c => c.offer_id) : []);
-            const completedTaskIds = new Set(completedTasks ? completedTasks.map(c => c.task_id) : []);
-            
-            await fetchAndRender('offers', 'offers-list-container', createOfferCard, completedOfferIds);
-            await fetchAndRender('tasks', 'tasks-list-container', createTaskCard, completedTaskIds);
-            
+            const { count } = await db.from('users').select('*', { count: 'exact', head: true }).eq('referred_by', currentUser.referral_code);
             document.getElementById('referral-count').innerText = count || 0;
             document.getElementById('referralLink').value = `https://t.me/FastPaisabot?start=${currentUser.referral_code || ''}`;
-            
+            updateShareLinks(currentUser.referral_code || '');
+
             updateSpinUI();
             updateAdWatchUI();
 
@@ -260,6 +307,12 @@
 
     function copyReferralLink() { navigator.clipboard.writeText(document.getElementById('referralLink').value).then(() => WebApp.showAlert('Link Copied!')); }
     function requestWithdrawal() { WebApp.showAlert('Withdrawal functionality is under development.'); }
+    function updateShareLinks(referralCode) {
+        const link = `https://t.me/FastPaisabot?start=${referralCode}`; // Change bot name
+        const text = encodeURIComponent(`Earn money with Fast Paisa! Join now: ${link}`);
+        document.getElementById('share-whatsapp').href = `https://wa.me/?text=${text}`;
+        document.getElementById('share-telegram').href = `https://t.me/share/url?url=${encodeURIComponent(link)}`;
+    }
 
     document.getElementById('offers-list-container').addEventListener('click', function(event) {
         const button = event.target.closest('.offer-reward-button');
@@ -267,12 +320,13 @@
     });
 
     document.getElementById('tasks-list-container').addEventListener('click', async function(event) {
-        const button = event.target.closest('.task-reward-button');
-        if (!button || !currentUser) return;
+        const button = event.target;
+        if (!currentUser) return;
         
-        const reward = parseFloat(button.dataset.reward);
-
-        if (button.classList.contains('ad-task-button')) {
+        if (button.classList.contains('join-channel-button')) {
+             WebApp.openLink(button.dataset.link);
+        } else if (button.classList.contains('ad-task-button')) {
+            const reward = parseFloat(button.dataset.reward);
             const today = new Date().toISOString().slice(0, 10);
             if(currentUser.last_ad_watch_date !== today) {
                 currentUser.ad_watch_count = 0;
@@ -282,7 +336,6 @@
             if(currentUser.ad_watch_count >= MAX_ADS_PER_DAY) {
                 WebApp.showAlert("Today's ad watch limit is over."); return;
             }
-            
             button.disabled = true; button.innerText = 'Loading Ad...';
             try {
                 if (typeof show_9520392 === 'function') await show_9520392();
@@ -291,22 +344,24 @@
                 await giveReward(reward, 'watching ad');
                 updateAdWatchUI();
             } catch(e) { WebApp.showAlert("Ad could not be loaded."); }
-            finally { button.disabled = false; button.innerText = 'Watch Ad'; }
-
+            finally { if( (MAX_ADS_PER_DAY - currentUser.ad_watch_count) > 0 ) { button.disabled = false; button.innerText = 'Watch Ad'; } }
         } else if (button.classList.contains('link-task-button')) {
             const taskId = parseInt(button.dataset.taskId);
-            button.disabled = true; button.innerText = 'Checking...';
-            
-            const { data: existingClaim } = await db.from('completed_tasks').select('id').eq('user_id', currentUser.telegram_id).eq('task_id', taskId).maybeSingle();
-            if (existingClaim) { WebApp.showAlert('Task already claimed.'); button.closest('.task-card').remove(); return; }
-
-            await db.from('completed_tasks').insert({ user_id: currentUser.telegram_id, task_id: taskId });
-            await giveReward(reward, 'completing task');
-            button.closest('.task-card').remove();
+            const reward = parseFloat(button.dataset.reward);
+            WebApp.showConfirm("Have you joined the channel? Please be honest.", async (ok) => {
+                if(ok) {
+                    button.disabled = true; button.innerText = 'Checking...';
+                    const { data: existingClaim } = await db.from('completed_tasks').select('id').eq('user_id', currentUser.telegram_id).eq('task_id', taskId).maybeSingle();
+                    if (existingClaim) { WebApp.showAlert('Task already claimed.'); button.closest('.task-card').remove(); return; }
+                    await db.from('completed_tasks').insert({ user_id: currentUser.telegram_id, task_id: taskId });
+                    await giveReward(reward, 'completing task');
+                    button.closest('.task-card').remove();
+                }
+            });
         }
     });
 
     window.addEventListener('load', initializeApp);
 </script>
 </body>
-</html>
+</html>                  
